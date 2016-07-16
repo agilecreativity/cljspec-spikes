@@ -1,5 +1,6 @@
 (ns cljspec-spikes.core
   (:require [clojure.spec :as s]
+            [clojure.spec.test :as test]
             [clojure.string :as str]))
 
 (def fish-numbers {0 "Zero"
@@ -89,3 +90,115 @@
 
 ;; Finally
 (fish-line 2 1 "Red" "Blue") ;; "Two fish. One fish. Red fish. Blue fish."
+
+;; From Clojure spec screencast by Alex Millers
+(defn my-index-of
+  "Returns the index at which search appears in source"
+  [source search]
+  (str/index-of source search))
+
+(my-index-of "foobar" "b") ;; 3
+
+(apply my-index-of ["foobar" "b"]) ;; 3
+
+(s/def ::index-of-args (s/cat :source string?
+                              :search string?))
+
+;; validation
+(s/valid? ::index-of-args ["foo" "f"]) ;; true
+(s/valid? ::index-of-args ["foo" 3]) ;; false
+
+;; Conformance & destructuring
+(s/conform ::index-of-args ["foo" "f"])
+;; {:source "foo", :search "f"}
+
+(s/conform ::index-of-args ["foo" 3])
+;; :clojure.spec/invalid
+
+(s/unform ::index-of-args ["foo" 3]) ;; ()
+
+;; precise errors
+(s/explain ::index-of-args ["foo" 3])
+
+(s/explain-str ::index-of-args ["foo" 3])
+;; "In: [1] val: 3 fails spec: :cljspec-spikes.core/index-of-args at: [:search] predicate: string?\n"
+
+(s/explain-data ::index-of-args ["foo" 3])
+;; #:clojure.spec{:problems [{:path [:search],
+;;                            :pred string?,
+;;                            :val 3,
+;;                            :via [:cljspec-spikes.core/index-of-args],
+;;                            :in [1]}]}
+
+;; Composition
+(s/explain-str (s/every ::index-of-args) [["good" "a"]
+                                          ["ok" "b"]
+                                          ["bad" 42]])
+;; "In: [2 1] val: 42 fails spec: :cljspec-spikes.core/index-of-args at: [:search] predicate: string?\n"
+
+;; example data generation
+(s/exercise ::index-of-args)
+;; ([("" "") {:source "", :search ""}]
+;;  [("7" "2") {:source "7", :search "2"}]
+;;  [("d" "Qc") {:source "d", :search "Qc"}]
+;;  [("Mr" "V") {:source "Mr", :search "V"}]
+;;  [("3Coc" "") {:source "3Coc", :search ""}]
+;;  [("4MM" "5ah") {:source "4MM", :search "5ah"}]
+;;  [("" "T1q0") {:source "", :search "T1q0"}]
+;;  [("Qh32w2" "54bJ") {:source "Qh32w2", :search "54bJ"}]
+;;  [("7wzM" "559") {:source "7wzM", :search "559"}]
+;;  [("f" "oz5t3360") {:source "f", :search "oz5t3360"}])
+
+;; assertion
+(s/check-asserts true) ;; true
+
+(s/assert ::index-of-args ["foo" "f"])
+;; ["foo" "f"]
+
+(s/assert ::index-of-args ["foo" 42])  ;;
+;; Spec assertion failed In: [1] val: 42 failes at: [:search] predicate: string?
+;; :clojure.spec/failure :assertion-failed
+
+;; specing a function
+(s/fdef my-index-of
+        :args (s/cat :source string?
+                     :search string?)
+        :ret nat-int?
+        :fn #(<= (:ret %) (-> % :args :source count)))
+
+;; Documentation (try this in REPL)
+(doc cljspec-spikes.core/my-idex-of)
+
+;; generative testing
+(->> (test/check `my-index-of) test/summarize-results) ;; {:total 1, :check-failed 1}
+;; =>
+;;  {:spec
+;; (fspec
+;;  :args
+;;  (cat :source string? :search string?)
+;;  :ret
+;;  nat-int?
+;;  :fn
+;;  (<= (:ret %) (-> % :args :source count))),
+;; :sym cljspec-spikes.core/my-index-of,
+;; :failure
+;; {:clojure.spec/problems
+;;  [{:path [:ret], :pred nat-int?, :val nil, :via [], :in []}],
+;;  :clojure.spec.test/args ("" "0"),
+;;  :clojure.spec.test/val nil,
+;;  :clojure.spec/failure :check-failed}}
+;; user>
+
+;; Instrumentation
+(test/instrument `my-index-of)
+
+(my-index-of "foo" 42)
+;; =>
+;; 1. Unhandled clojure.lang.ExceptionInfo
+;; Call to #'cljspec-spikes.core/my-index-of did not conform to spec: In: [1]
+;; val: 42 fails at: [:args :search] predicate: string? :clojure.spec/args
+;; ("foo" 42) :clojure.spec/failure :instrument :clojure.spec.test/caller {:file
+;;                                                                         "form-init6112948548877571226.clj", :line 194, :var-scope
+;;                                                                         cljspec-spikes.core/eval21878}
+
+;; {:clojure.spec/problems [{:path [:args :search], :pred string?, :val 42, :via [], :in [1]}], :clojure.spec/args ("foo" 42), :clojure.spec/failure :instrument, :clojure.spec.test/caller {:file "form-init6112948548877571226.clj", :line 194, :var-scope cljspec-spikes.core/eval21878}}
