@@ -1,3 +1,4 @@
+;; From: the article by @gigasquid blog
 (ns cljspec-spikes.core
   (:require [clojure.spec :as s]
             [clojure.spec.test :as test]
