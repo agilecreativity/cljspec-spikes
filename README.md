@@ -8,4 +8,5 @@
 - [PolyConf 16 - Elm for JavaScript Developers (38m)](https://www.youtube.com/watch?v=tOkOmWgDLOM)
 - [PolyConf 16 - Erlang in The Land of Lisp (30m)](https://www.youtube.com/watch?v=qVMKIKJrUd8)
 - [PolyConf 16 - Building Programs in Guile Scheme with Live Demo(38m)](https://www.youtube.com/watch?v=TVO8WXFYDIA)
-- [Polyconf 16 - Clojure on iOS with React Native](https://www.youtube.com/watch?v=UHRITqJGadU)
+- [PolyConf 16 - Clojure on iOS with React Native](https://www.youtube.com/watch?v=UHRITqJGadU)
+- [PoloConf 16 - Datomic in Production in 1 Year](https://www.youtube.com/watch?v=0y6QK813new)
