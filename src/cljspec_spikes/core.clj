@@ -177,9 +177,8 @@
 (s/check-asserts true) ;; true
 
 (s/assert ::index-of-args ["foo" "f"])
-;; ["foo" "f"]
 
-(s/assert ::index-of-args ["foo" 42])  ;;
+(comment (s/assert ::index-of-args ["foo" 42]))
 ;; Spec assertion failed In: [1] val: 42 failes at: [:search] predicate: string?
 ;; :clojure.spec/failure :assertion-failed
 
@@ -189,9 +188,6 @@
                      :search string?)
         :ret nat-int?
         :fn #(<= (:ret %) (-> % :args :source count)))
-
-;; Documentation (try this in REPL)
-(doc cljspec-spikes.core/my-idex-of)
 
 ;; generative testing
 (->> (test/check `my-index-of) test/summarize-results) ;; {:total 1, :check-failed 1}
@@ -216,7 +212,7 @@
 ;; Instrumentation
 (test/instrument `my-index-of)
 
-(my-index-of "foo" 42)
+(comment (my-index-of "foo" 42))
 ;; =>
 ;; 1. Unhandled clojure.lang.ExceptionInfo
 ;; Call to #'cljspec-spikes.core/my-index-of did not conform to spec: In: [1]
