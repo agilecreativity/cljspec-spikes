@@ -8,6 +8,8 @@
                    1 "One"
                    2 "Two"})
 
+(keys fish-numbers) ;; (0 1 2)
+
 (s/def ::fish-number (set (keys fish-numbers)))
 
 (s/valid? ::fish-number 1) ;; true
@@ -15,6 +17,9 @@
 (s/valid? ::fish-number 5) ;; false
 
 (s/explain ::fish-number 5) ;; nil
+
+(s/explain-data ::fish-number 5)
+;; #:clojure.spec{:problems [{:path [], :pred (set (keys fish-numbers)), :val 5, :via [:cljspec-spikes.core/fish-number], :in []}]}
 
 (s/def ::color #{"Red" "Blue" "Dun"})
 
@@ -24,29 +29,40 @@
                            :c1 ::color
                            :c2 ::color))
 
-(s/explain ::first-line [1 2 "Red" "Black"])
+(s/explain ::first-line [1 2 "Red" "Black"]) ;; nil
 
+(s/explain-str ::first-line [1 2 "Red" "Black"])
+;; "In: [3] val: \"Black\" fails spec: :cljspec-spikes.core/color at: [:c2] predicate: #{\"Blue\" \"Dun\" \"Red\"}\n"
+
+;; If we check for conformance we will get
+(s/conform ::first-line [1 2 "Red" "Black"]) ;; :clojure.spec/invalid
+
+;; new definition
 (defn one-bigger? [{:keys [n1 n2]}]
   (= n2 (inc n1)))
 
+;; Re-define the first line
 (s/def ::first-line (s/and (s/cat :n1 ::fish-number
                                   :n2 ::fish-number
                                   :c1 ::color
                                   :c2 ::color)
+                           ;; Adding one-bigger?
                            one-bigger?
                            #(not= (:c1 %) (:c2 %))))
 
 (s/valid? ::first-line [1 2 "Red" "Blue"]) ;; true
-
-(s/explain ::first-line [1 2 "Red" "Blue"]) ;; => Success! in REPL
-
 (s/conform ::first-line [1 2 "Red" "Blue"]) ;; {:n1 1, :n2 2, :c1 "Red", :c2 "Blue"}
 
+(s/explain-str ::first-line [1 2 "Red" "Blue"]) ;; "Success!\n"
+
+;; Since the first value is lesser than the 2nd one
 (s/valid? ::first-line [2 1 "Red" "Blue"]) ;; false
+
+;; Let's see why
 (s/explain ::first-line [2 1 "Red" "Blue"])
 ;; val: {:n1 2, :n2 1, :c1 "Red", :c2 "Blue"} failes spec: :cljspec-spikes.core/first-line ..)
 
-;; Generating test data - and poetry with specification
+;; Generating test data and poetry with specification
 (s/exercise ::first-line 5)
 ;; ([(0 1 "Dun" "Red") {:n1 0, :n2 1, :c1 "Dun", :c2 "Red"}]
 ;; [(1 2 "Red" "Blue") {:n1 1, :n2 2, :c1 "Red", :c2 "Blue"}]
@@ -63,17 +79,24 @@
                      (s/cat :n1 ::fish-number
                             :n2 ::fish-number
                             :c1 ::color
-                            :c2 ::color
-                            )
+                            :c2 ::color)
+                     ;; first number is lesser than second number by one
                      one-bigger?
+                     ;; The two numbers are not equal
                      #(not= (:c1 %) (:c2 %))
+                     ;; Must follow the rules set by the function above
                      fish-number-rhymes-with-color?))
 
 (s/valid? ::first-line [1 2 "Red" "Blue"]) ;; true
+(s/explain-str ::first-line [1 2 "Red" "Blue"]) ;; "Success!\n"
 
 (s/explain ::first-line [1 2 "Red" "Dun"]) ;; val: {:n1 ...} fails predicate: fish-number-rhymes-with-color?
 
-(s/exercise ::first-line) ;; ([(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(1 2 "Red" "Blue") {:n1 1, :n2 2, :c1 "Red", :c2 "Blue"}] [(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(0 1 "Blue" "Dun") {:n1 0, :n2 1, :c1 "Blue", :c2 "Dun"}] [(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(0 1 "Red" "Dun") {:n1 0, :n2 1, :c1 "Red", :c2 "Dun"}] [(1 2 "Red" "Blue") {:n1 1, :n2 2, :c1 "Red", :c2 "Blue"}] [(0 1 "Blue" "Dun") {:n1 0, :n2 1, :c1 "Blue", :c2 "Dun"}])
+;; To see explaination in plain text
+(s/explain-str ::first-line [1 2 "Red" "Dun"])
+;; "val: {:n1 1, :n2 2, :c1 \"Red\", :c2 \"Dun\"} fails spec: :cljspec-spikes.core/first-line predicate: fish-number-rhymes-with-color?\n"
+
+(s/exercise ::first-line)
 
 ;; Using spec with functions
 
